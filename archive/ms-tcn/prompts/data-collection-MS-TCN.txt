@@ -1,0 +1,116 @@
+Create a comprehensive data gathering script for CPU power prediction research.
+
+The script should collect synchronized system metrics and RAPL power readings to train a machine learning model for predicting power usage.
+
+DATA SOURCES TO CAPTURE:
+
+1. RAPL Power Readings (from /sys/class/powercap/intel-rapl):
+
+ - package-0: total package power
+ - core: core power domain
+ - dram: memory power domain
+ - Sample at 16ms intervals (62.5Hz)
+
+2, System Metrics:
+
+ - /proc/stat - CPU utilization breakdown (user, system, idle, iowait, etc.)
+ - /proc/meminfo - Memory usage statistics
+ - /proc/diskstats - I/O operations and throughput
+ - /proc/net/dev - Network activity
+ - /proc/loadavg - System load averages
+ - /proc/vmstat - Memory pressure and page faults
+ - /proc/interrupts - Interrupt counts
+
+3, CPU Information:
+
+ - /proc/cpuinfo - CPU model, frequency, cache sizes
+ - /proc/cpufreq - Current frequency and governor
+
+OUTPUT REQUIREMENTS:
+
+ - CSV file with timestamped synchronized readings
+ - Header row with descriptive column names
+ - Power values in Watts
+ - Memory values in MB
+ - Time durations in seconds or milliseconds
+
+SAMPLING CONFIGURATION:
+
+ - Interval: 16ms (62.5 samples per second)
+ - Duration: Configurable (default 1 hour)
+ - File rotation: Every 1GB or configurable time period
+
+SIGNALS TO CAPTURE:
+
+Power Metrics:
+
+ - rapl_package_power
+ - rapl_core_power
+ - rapl_dram_power
+
+CPU Utilization:
+
+ - cpu_user_percent
+ - cpu_system_percent
+ - cpu_idle_percent
+ - cpu_iowait_percent
+ - cpu_irq_percent
+ - cpu_softirq_percent
+ - context_switches_sec
+ - interrupts_sec
+
+Memory Metrics:
+
+ - memory_used_mb
+ - memory_cached_mb
+ - memory_buffers_mb
+ - memory_free_mb
+ - swap_used_mb
+ - page_faults_sec
+ - page_cache_hit_ratio
+
+I/O Metrics:
+
+ - read_iops
+ - write_iops
+ - read_throughput_mb
+ - write_throughput_mb
+ - io_util_percent
+
+Network Metrics:
+
+ - network_rx_packets_sec
+ - network_tx_packets_sec
+ - network_rx_mb_sec
+ - network_tx_mb_sec
+ - System Load:
+ - load_1min
+ - load_5min
+ - load_15min
+ - running_processes
+ - blocked_processes
+
+TECHNICAL REQUIREMENTS:
+
+ - Write in Python for better precision and synchronization
+ - Ensure all readings are synchronized to the same timestamp
+ - Include error handling for missing RAPL interfaces
+ - Minimize performance impact on the system
+ - Log metadata (CPU model, start time, duration)
+ - Show progress indicators for long runs
+ - Handle interrupt signals for clean shutdown
+
+USAGE PATTERN SUPPORT:
+
+ - Basic collection: python power_data_collector.py --duration 3600 --output power_data.csv
+ - Continuous collection: python power_data_collector.py --continuous --max-file-size 1GB
+ - Custom sampling: python power_data_collector.py --interval 0.016 --duration 7200
+
+ADDITIONAL FEATURES:
+
+ - Real-time statistics display (optional)
+ - Data validation to detect sensor errors
+ - Compression option for output files
+ - Background operation mode
+
+Create a well-commented, robust Python script that can run on Linux systems with Intel CPUs supporting RAPL. Include proper error handling and clean shutdown on interrupt signals.

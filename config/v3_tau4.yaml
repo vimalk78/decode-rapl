@@ -1,0 +1,74 @@
+# DECODE-RAPL v3 Configuration - TAU=4
+# Simplified architecture: Encoder → Power Head (no decoder, no reconstruction loss)
+
+# Model version
+version: "v3"
+
+# Data paths
+data:
+  processed_dir: "data/processed/tau4"
+  train_file: "train.npz"
+  val_file: "val.npz"
+  test_file: "test.npz"
+
+# Output directories
+output:
+  checkpoint_dir: "checkpoints/v3_tau4"
+  results_dir: "results/v3_tau4"
+  plots_dir: "results/v3_tau4/plots"
+
+# Model architecture
+model:
+  version: "v3"              # Use v3 architecture (no decoder)
+  input_dim: 100             # 4 features × 25 delays
+  latent_dim: 64             # Latent bottleneck
+  encoder_layers:            # Encoder: 100 → 512 → 128 → 64
+    - 512
+    - 128
+  power_head_layers:         # Power head: 64 → 128 → 64 → 1
+    - 128
+    - 64
+  dropout: 0.3               # Regularization
+
+# Training
+training:
+  batch_size: 256
+  epochs: 100
+  learning_rate: 0.0005      # Conservative starting LR
+  weight_decay: 0.0003       # L2 regularization
+  early_stopping_patience: 15  # Allow more exploration without reconstruction conflict
+
+  # Device
+  device: "cuda"             # "cuda" or "cpu"
+
+  # Learning rate scheduler
+  scheduler:
+    type: "ReduceLROnPlateau"
+    factor: 0.5
+    patience: 5
+    min_lr: 0.00001
+
+# Validation
+validation:
+  val_interval: 1            # Validate every N epochs
+  save_best: true            # Save best model based on val power loss
+
+# Logging
+logging:
+  log_interval: 100          # Log every N batches
+  plot_interval: 5           # Generate plots every N epochs
+
+# Random seed for reproducibility
+seed: 42
+
+# Delay embedding info (for reference, not used by model)
+embedding:
+  tau: 4                     # Time delay in samples
+  d: 25                      # Number of delays
+  n_features: 4              # user%, system%, iowait%, log(ctx_switches)
+  temporal_lookback_ms: 1536  # (d-1) * tau * 16ms = 24 * 4 * 16 = 1536ms
+  feature_order:
+    - "user_percent (0-24)"
+    - "system_percent (25-49)"
+    - "iowait_percent (50-74)"
+    - "log_ctx_switches (75-99)"

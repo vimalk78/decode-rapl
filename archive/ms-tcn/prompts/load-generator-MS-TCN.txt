@@ -1,0 +1,99 @@
+Create a comprehensive system load generator script for CPU power prediction training data collection.
+
+The script should generate diverse workload patterns to stress different system components and create varied power signatures for training our MS-TCN model.
+
+REQUIREMENTS:
+
+WORKLOAD TYPES TO GENERATE:
+
+- CPU-intensive workloads:
+  - Different instruction mix patterns (integer, floating point, AES, SHA)
+  - Various CPU utilization levels (25%, 50%, 75%, 100%)
+  - Single-core and multi-core stress patterns
+  - Bursty CPU workloads with variable duty cycles
+
+- Memory-intensive workloads:
+  - Sequential memory access patterns
+  - Random memory access patterns
+  - Different working set sizes (L1, L2, L3 cache, main memory)
+  - Memory bandwidth saturation tests
+  - NUMA-aware memory access patterns
+
+- I/O-intensive workloads:
+  - Sequential read/write patterns
+  - Random read/write patterns
+  - Different I/O block sizes (4KB, 64KB, 1MB)
+  - Mixed read/write workloads
+  - Filesystem metadata operations
+
+- Mixed workloads:
+  - Combined CPU and memory stress
+  - Combined CPU and I/O patterns
+  - Realistic application simulations (web server, database, batch processing)
+  - Time-varying workload patterns
+
+- Idle and low-power states:
+  - Periods of system idle
+  - Rapid state transitions
+  - Frequency scaling scenarios
+
+SCRIPT SPECIFICATIONS:
+
+- Write in Python for flexibility and control
+- Use subprocesses for stress-ng, fio, and other system tools
+- Provide precise control over duration, intensity, and patterns
+- Support automated test sequences and manual operation
+- Generate reproducible workload patterns
+
+CONTROL PARAMETERS:
+
+- Workload duration control (exact timing)
+- Intensity ramping (linear, exponential, step changes)
+- Multi-component coordination (CPU+memory+I/O simultaneously)
+- Customizable duty cycles for bursty workloads
+- Resource limit controls (CPU sets, memory limits, I/O rate limiting)
+
+OUTPUT AND MONITORING:
+
+- Real-time progress reporting
+- Workload metadata logging (what pattern is running when)
+- Validation of achieved load levels
+- Error handling for failed stress components
+- Cleanup of all stress processes on exit
+
+USAGE PATTERNS:
+
+- Automated test sequences:
+  python load_generator.py --sequence comprehensive --duration 3600
+  python load_generator.py --pattern cpu-ramp --levels 25,50,75,100 --duration 600
+
+- Specific workload types:
+  python load_generator.py --workload memory-bandwidth --size 8G --duration 300
+  python load_generator.py --workload mixed-io --block-sizes 4k,64k,1M --duration 400
+
+- Custom patterns:
+  python load_generator.py --custom "cpu:50:60,mem:random:2G:120,io:seqwrite:200"
+
+- Interactive mode:
+  python load_generator.py --interactive
+
+SPECIFIC WORKLOAD PATTERNS NEEDED:
+
+- CPU frequency scaling tests
+- Memory hierarchy saturation (L1/L2/L3/DRAM)
+- I/O queue depth variations
+- Network traffic simulation
+- Container/pod like workload patterns
+- Microservice-style bursty patterns
+- Database-like access patterns
+- Scientific computing patterns
+- Web server request patterns
+
+INTEGRATION WITH DATA COLLECTOR:
+
+- Coordinate with power data collection script
+- Provide synchronization markers in output
+- Support external trigger/control for coordinated experiments
+- Generate workload description metadata for training labels
+
+Create a well-commented Python script that can generate these diverse workload patterns with precise timing and intensity control. Include safety limits to prevent system overload and proper cleanup mechanisms.

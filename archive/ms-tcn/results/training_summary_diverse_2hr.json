@@ -1,0 +1,33 @@
+{
+  "best_val_loss": 0.0028650535148864783,
+  "final_train_loss": 0.0014813305441949323,
+  "final_val_loss": 0.0030473914300797114,
+  "final_val_mae": 1.1571255922317505,
+  "final_val_r2": 0.9878106117248535,
+  "num_features": 19,
+  "num_targets": 1,
+  "feature_columns": [
+    "cpu_user_percent",
+    "cpu_system_percent",
+    "cpu_idle_percent",
+    "cpu_iowait_percent",
+    "cpu_irq_percent",
+    "cpu_softirq_percent",
+    "context_switches_sec",
+    "interrupts_sec",
+    "memory_used_mb",
+    "memory_cached_mb",
+    "memory_buffers_mb",
+    "memory_free_mb",
+    "swap_used_mb",
+    "page_faults_sec",
+    "load_1min",
+    "load_5min",
+    "load_15min",
+    "running_processes",
+    "blocked_processes"
+  ],
+  "target_columns": [
+    "rapl_package_power"
+  ]
+}

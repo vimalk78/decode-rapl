@@ -1,0 +1,56 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Editor / OS ---
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# --- Project-specific: data, checkpoints, runtime artifacts ---
+# Keep code, configs, reports, and the one shipped checkpoint
+# (decode-rapl/checkpoints/v4_tau1/best_model.pt). Everything else
+# under data/, logs/, debug/, comparisons/ is too large or transient
+# to belong in git.
+data/
+**/data/
+**/logs/
+**/debug/
+**/comparisons/
+**/results/predictions/
+**/results/attention_analysis/
+**/prediction/
+*.npz
+
+# Per-run plots that are NOT referenced from any markdown report can be regenerated;
+# keeping the ones currently in the tree (they document specific training runs and
+# are referenced from the reports), so no plots/ rule is checked in by default.
+
+# Compiled Go binary (the source .go file IS checked in)
+decode-rapl/collector/my_data_collector
+
+# Live / runtime CSVs (the inference scripts dump these)
+prediction/*.csv
+**/debug_live_data*.csv
+**/debug_model_output.txt
+**/temp.txt
+
+# All checkpoints EXCEPT the one we explicitly ship
+**/checkpoints/*
+!decode-rapl/checkpoints/
+!decode-rapl/checkpoints/v4_tau1/
+!decode-rapl/checkpoints/v4_tau1/best_model.pt

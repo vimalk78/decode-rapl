@@ -1,0 +1,149 @@
+Loading training data from data/training_diverse_2hr.csv...
+Loaded 449997 samples
+
+Available features: 19
+
+================================================================================
+Feature-Target Correlations
+================================================================================
+
+Feature                        Correlation     |Correlation|
+------------------------------------------------------------
+cpu_idle_percent                       -0.956          0.956  ✓ STRONG
+running_processes                       0.922          0.922  ✓ STRONG
+cpu_user_percent                        0.844          0.844  ✓ STRONG
+interrupts_sec                          0.708          0.708  ✓ STRONG
+cpu_softirq_percent                     0.259          0.259  ⚠️  WEAK
+cpu_system_percent                      0.256          0.256  ⚠️  WEAK
+context_switches_sec                    0.179          0.179  ✗ NEGLIGIBLE
+load_1min                               0.152          0.152  ✗ NEGLIGIBLE
+cpu_irq_percent                         0.130          0.130  ✗ NEGLIGIBLE
+load_5min                               0.059          0.059  ✗ NEGLIGIBLE
+load_15min                              0.036          0.036  ✗ NEGLIGIBLE
+memory_used_mb                          0.030          0.030  ✗ NEGLIGIBLE
+memory_free_mb                          0.028          0.028  ✗ NEGLIGIBLE
+memory_cached_mb                       -0.017          0.017  ✗ NEGLIGIBLE
+swap_used_mb                           -0.014          0.014  ✗ NEGLIGIBLE
+page_faults_sec                        -0.013          0.013  ✗ NEGLIGIBLE
+blocked_processes                       0.012          0.012  ✗ NEGLIGIBLE
+cpu_iowait_percent                     -0.005          0.005  ✗ NEGLIGIBLE
+memory_buffers_mb                         nan            nan  ✗ NEGLIGIBLE
+
+================================================================================
+Principal Component Analysis
+================================================================================
+
+Original samples: 449997
+✓ No NaN values found
+
+Standardizing features...
+Running PCA...
+
+Explained variance by component:
+Component    Variance %      Cumulative %
+------------------------------------------
+PC1                  20.63%         20.63%
+PC2                  15.07%         35.70%
+PC3                  13.33%         49.02%
+PC4                   9.62%         58.64%
+PC5                   7.10%         65.74%
+PC6                   5.56%         71.30%
+PC7                   5.40%         76.70%
+PC8                   5.32%         82.02%
+PC9                   4.99%         87.01%
+PC10                  4.50%         91.51%
+
+Components needed:
+  95% variance: 11/19 components
+  99% variance: 13/19 components
+  Dimensionality reduction: 19 → 11 features
+
+================================================================================
+Feature Contributions to Top Principal Components
+================================================================================
+
+PC1 (explains 20.6% variance):
+Feature                        Contribution
+---------------------------------------------
+cpu_idle_percent                        0.461
+running_processes                      -0.449
+interrupts_sec                         -0.447
+cpu_user_percent                       -0.367
+cpu_softirq_percent                    -0.238
+
+PC2 (explains 15.1% variance):
+Feature                        Contribution
+---------------------------------------------
+cpu_system_percent                      0.494
+cpu_softirq_percent                     0.450
+context_switches_sec                    0.438
+cpu_user_percent                       -0.402
+running_processes                      -0.239
+
+PC3 (explains 13.3% variance):
+Feature                        Contribution
+---------------------------------------------
+load_5min                               0.525
+load_15min                              0.490
+memory_free_mb                         -0.370
+memory_cached_mb                        0.363
+load_1min                               0.344
+
+================================================================================
+Overall Feature Importance (Top 95% PCs)
+================================================================================
+
+Rank   Feature                        Importance %
+---------------------------------------------------
+1      page_faults_sec                         7.85%  ⚠️  MEDIUM
+2      memory_used_mb                          7.82%  ⚠️  MEDIUM
+3      blocked_processes                       7.70%  ⚠️  MEDIUM
+4      swap_used_mb                            6.58%  ⚠️  MEDIUM
+5      memory_cached_mb                        6.38%  ⚠️  MEDIUM
+6      cpu_softirq_percent                     6.18%  ⚠️  MEDIUM
+7      context_switches_sec                    6.02%  ⚠️  MEDIUM
+8      cpu_system_percent                      5.83%  ⚠️  MEDIUM
+9      memory_free_mb                          5.17%  ⚠️  MEDIUM
+10     interrupts_sec                          5.10%  ⚠️  MEDIUM
+11     load_1min                               4.91%  ✗ LOW
+12     cpu_irq_percent                         4.59%  ✗ LOW
+13     running_processes                       4.49%  ✗ LOW
+14     load_5min                               4.46%  ✗ LOW
+15     cpu_idle_percent                        4.45%  ✗ LOW
+16     cpu_iowait_percent                      4.43%  ✗ LOW
+17     cpu_user_percent                        4.07%  ✗ LOW
+18     load_15min                              3.99%  ✗ LOW
+19     memory_buffers_mb                       0.00%  ✗ LOW
+
+✓ Visualization saved to results/plots/pca_feature_analysis_diverse_2hr.png
+
+================================================================================
+SUMMARY
+================================================================================
+
+Data: 449997 samples, 19 features
+Dimensionality: Can reduce from 19 to 11 features
+
+Strongly correlated features (4):
+  - cpu_idle_percent: r=-0.956
+  - running_processes: r=0.922
+  - cpu_user_percent: r=0.844
+  - interrupts_sec: r=0.708
+
+Weakly correlated features (12):
+  - context_switches_sec: r=0.179
+  - load_1min: r=0.152
+  - cpu_irq_percent: r=0.130
+  - load_5min: r=0.059
+  - load_15min: r=0.036
+  - memory_used_mb: r=0.030
+  - memory_free_mb: r=0.028
+  - memory_cached_mb: r=-0.017
+  - swap_used_mb: r=-0.014
+  - page_faults_sec: r=-0.013
+  - blocked_processes: r=0.012
+  - cpu_iowait_percent: r=-0.005
+
+Recommendation:
+  ✓ Use PCA with 11 components for dimensionality reduction
+  ✓ Or remove low-importance features

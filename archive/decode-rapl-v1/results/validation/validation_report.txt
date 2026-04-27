@@ -1,0 +1,105 @@
+DECODE-RAPL Temporal Data Validation Report
+================================================================================
+
+Passed: 10/19 checks
+Success Rate: 52.6%
+
+[PASS] No missing values
+  Value: 0.0000
+  Threshold: = 0
+  No missing values detected
+
+[PASS] CPU usage in [0, 100]
+  Value: 1.0000
+  Threshold: = True
+  All CPU values valid
+
+[PASS] Power > 0
+  Value: 1.0000
+  Threshold: = True
+  All power values positive
+
+[PASS] CPU-Power correlation
+  Value: 0.7868
+  Threshold: > 0.7
+  Strong positive correlation
+
+[FAIL] CPU ACF decay (lag=50ms)
+  Value: 0.0087
+  Threshold: 0.2 < x < 0.9
+  Too noisy
+
+[FAIL] CPU ACF decay (lag=100ms)
+  Value: -0.0038
+  Threshold: 0.1 < x < 0.7
+  Insufficient long-range structure
+
+[PASS] ADF stationarity test
+  Value: 0.0000
+  Threshold: < 0.05 (p-value)
+  Data is stationary
+
+[FAIL] Rolling mean variation
+  Value: 0.0101
+  Threshold: 0.1 < x < 0.5
+  Too static
+
+[FAIL] Short-term predictability (10ms)
+  Value: 0.0000
+  Threshold: 0.7 < x < 0.99
+  Too noisy
+
+[FAIL] Medium-term predictability (100ms)
+  Value: 0.0000
+  Threshold: 0.2 < x < 0.7
+  Too random
+
+[PASS] Frequency diversity
+  Value: 0.0017
+  Threshold: < 0.3
+  Good multi-scale dynamics
+
+[FAIL] Multi-scale frequency content
+  Value: 0.0094
+  Threshold: > 0.1 for each band
+  Missing dynamics at some time scales
+
+[PASS] CPU-Power lag
+  Value: 0.0000
+  Threshold: < 20ms
+  Power lags CPU by 0ms
+
+[PASS] CPU-Power correlation strength
+  Value: 0.7948
+  Threshold: > 0.7
+  Strong correlation
+
+[FAIL] Regime balance
+  Value: 0.0000
+  Threshold: > 0.1
+  Some regimes underrepresented - collect more diverse workload data
+
+[FAIL] Regime transition rate
+  Value: 0.9259
+  Threshold: 1 < x < 20 per 1000 samples
+  Too static
+
+[PASS] Pattern diversity (1st PC)
+  Value: 0.0102
+  Threshold: < 0.7
+  Diverse temporal patterns
+
+[FAIL] Pattern complexity (5 PCs)
+  Value: 0.0501
+  Threshold: 0.6 < x < 0.9
+  Too noisy
+
+[PASS] Embedding quality (d=25)
+  Value: 0.0000
+  Threshold: < 0.1
+  Good embedding at d=25
+
+
+================================================================================
+✗ POOR - Significant data quality issues detected
+================================================================================

@@ -1,0 +1,59 @@
+Please write a complete Python program using PyTorch to implement a model for reverse-engineering RAPL's power estimation logic. The model should use time-delay embedding on CPU usage data, an autoencoder to learn a compact latent space, and an LSTM for temporal prediction of power. The goal is to create a generalizable surrogate that emulates RAPL's silicon dynamics across machines of the same CPU architecture (e.g., Skylake), trained on bare-metal data from multiple machines.
+Key requirements:
+
+Data: Load from a CSV file (e.g., 'rapl_data.csv') with columns: 'timestamp' (datetime or index), 'machine_id' (string or int for machine identifier), 'cpu_usage' (float, 0-100), 'power' (float, Watts from RAPL). Assume 1ms sampling rate. Data from 3-5 machines mixed together. Split into train/val/test (80/10/10, with cross-machine validation).
+Preprocessing:
+
+Normalize CPU usage to [0,1] (divide by 100).
+Normalize power using MinMaxScaler (fit on train).
+Implement time-delay embedding: τ=1ms, d=20-30 (tunable); create Hankel matrices for sequences.
+Create sliding windows: Window size T=60 (e.g., 60ms of embedded data).
+Use torch DataLoader for batching (batch_size=32).
+
+
+Model Architecture:
+
+Delay Embedding Layer: Custom function/module to generate embeddings.
+Autoencoder: Encoder (3 layers: 256→64→32→latent_dim=8) with ReLU, dropout=0.2; Decoder mirrors to reconstruct embedding.
+LSTM: Input latent Z sequences (shape: batch, T, latent_dim), hidden_size=64, num_layers=1, output_size=1 (power).
+Adversarial Discriminator: Small MLP (2 layers) on Z to predict machine_id (for generalization); use gradient reversal during training.
+Regularization: L2 weight decay=1e-4 on autoencoder/LSTM.
+
+
+Training:
+
+Combined Loss: MSE for power prediction + 0.1reconstruction MSE + 0.01adversarial (cross-entropy for discriminator).
+Optimizer: Adam with lr=0.001.
+Train for 50-100 epochs, with early stopping if val loss doesn't improve for 10 epochs.
+Device: Use GPU if available (torch.cuda).
+Include adversarial training: Train discriminator to classify machine_id from Z, then penalize encoder to fool it.
+Plot training/val loss curves using matplotlib.
+Save the best model to 'rapl_surrogate.pth' (encoder + LSTM only; discard decoder post-training).
+
+
+Evaluation:
+
+Compute test MSE, MAPE (<5% target), and plot predictions vs. actuals, stratified by machine_id for generalization.
+
+
+Inference:
+
+Load saved model (encoder + LSTM).
+For bare-metal: Take usage history, embed, encode to Z sequence, LSTM predict power.
+For VM: Scale input (effective_host_usage = VM_usage * (VM_vcpus / host_cores)), predict as if bare-metal, then VM_power = predicted * (VM_vcpus / host_cores).
+Simulate real-time: Buffer recent usage (e.g., last 60ms at 1ms res), embed, predict on demand.
+Lightweight: No GPU required; use psutil for VM sampling (fallback to 10-100ms if needed).
+
+
+Additional Features:
+
+Handle multi-machine training: Shuffle data to mix machine_ids; adversarial loss to ignore machine-specific biases.
+Include MSR sampling prototype (from earlier discussion) as a separate script/module for data collection simulation.
+Use libraries: torch, pandas, numpy, sklearn (for scalers), matplotlib.
+Make code modular: Functions for embedding, training, inference.
+Add comments, error handling, and unit tests.
+Generate synthetic data if needed for testing (e.g., simulate sinusoidal usage + noise for power).
+
+
+
+The program should run end-to-end on sample data. Focus on bare-metal training for RAPL emulation and simple scaling for VM inference.

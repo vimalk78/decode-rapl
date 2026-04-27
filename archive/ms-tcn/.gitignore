@@ -1,0 +1,49 @@
+# Data files
+*.csv
+data/*.csv
+data/
+
+# Model files
+*.pth
+models/*.pth
+models/
+
+# Results and plots
+#results/
+#*.png
+
+# Debug files
+debug_*.csv
+debug_*.txt
+
+# Private notes
+.KARO.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+temp.txt
+*.tmp

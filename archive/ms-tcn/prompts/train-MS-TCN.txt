@@ -1,0 +1,84 @@
+Create a training and validation script for the CPU power prediction MS-TCN model.
+
+INPUT HANDLING:
+- Take CSV files from data collection as input
+- Support single or multiple CSV files
+- Handle the specific column format from our data collector
+
+DATA PREPROCESSING:
+- Load CSV data with timestamped readings
+- Handle missing values through interpolation
+- Apply Z-score normalization to features
+- Create sequences of 64 timesteps with sliding window
+- Separate features from targets
+- Create synchronized input-output pairs
+
+FEATURES AND TARGETS:
+- Input features: cpu_user_percent, cpu_system_percent, cpu_iowait_percent, cpu_irq_percent, memory_used_mb, memory_cached_mb, swap_used_mb, page_faults_sec, read_iops, write_iops, read_throughput_mb, write_throughput_mb, network_rx_mb_sec, network_tx_mb_sec, load_1min, context_switches_sec
+- Target variables: rapl_package_power, rapl_core_power, rapl_dram_power
+
+DATA SPLITTING:
+- Split data into train/validation/test sets (70%/15%/15%)
+- Maintain temporal ordering in splits
+- Prevent data leakage between sets
+- Support both random and time-based splitting
+
+MODEL ARCHITECTURE (MS-TCN):
+- Input: sequences of 64 timesteps × 15 features
+- Multi-scale 1D convolution with kernel sizes 3, 5, 7
+- 6 dilated temporal blocks with dilations 1, 2, 4, 8, 16, 32
+- Multi-head self-attention with 8 heads
+- Global average pooling
+- Fully connected layers with 256 units
+- Three output heads for package, core, and DRAM power
+- Use ReLU activation and batch normalization
+- Include dropout for regularization
+
+TRAINING CONFIGURATION:
+- Use PyTorch framework
+- Multi-domain Huber loss function
+- Loss weights: 50% package, 30% core, 20% DRAM
+- AdamW optimizer with learning rate 1e-4
+- Cosine annealing learning rate scheduler
+- Batch size of 32
+- Early stopping with patience of 20 epochs
+- Maximum 200 epochs
+
+VALIDATION METRICS:
+- Track validation loss each epoch
+- Calculate Mean Absolute Error for each power domain
+- Calculate Mean Absolute Percentage Error
+- Calculate R-squared score for each output
+- Generate prediction vs actual plots
+- Compute correlation coefficients
+
+MODEL SAVING:
+- Save best model based on validation loss
+- Save model architecture and weights
+- Save normalization parameters for inference
+- Save training history and metrics
+- Create model card with performance summary
+
+OUTPUT AND REPORTING:
+- Print training progress with epoch statistics
+- Generate training curves (loss vs epochs)
+- Create validation performance report
+- Save test set predictions for analysis
+- Export model performance summary
+
+USAGE PATTERNS:
+- Basic training: python train_model.py --data collected_data.csv --output model.pth
+- Multiple files: python train_model.py --data data1.csv data2.csv --output model.pth
+- Custom parameters: python train_model.py --data data.csv --sequence-length 64 --batch-size 32 --learning-rate 1e-4
+- Resume training: python train_model.py --data data.csv --resume checkpoint.pth
+
+IMPLEMENTATION DETAILS:
+- Use PyTorch for model implementation
+- Implement custom dataset class for sequence data
+- Include data augmentation with additive noise
+- Support GPU training with fallback to CPU
+- Add comprehensive logging
+- Include unit tests for data loading
+- Add model inference example script
+
+Create a complete Python script that implements this training pipeline with error handling, progress bars, and model evaluation capabilities.

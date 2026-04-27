@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DECODE-RAPL: Predicting CPU Power from OS-Level Metrics</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/moon.css">
+<style>
+  .reveal h2 { font-size: 1.4em; }
+  .reveal h3 { font-size: 1.1em; color: #7ec8e3; }
+  .reveal ul { font-size: 0.75em; }
+  .reveal li { margin-bottom: 0.3em; }
+  .reveal img.slide-img { max-height: 420px; border: 1px solid #444; border-radius: 6px; }
+  .reveal img.slide-img-sm { max-height: 260px; border: 1px solid #444; border-radius: 6px; }
+  .side-by-side { display: flex; gap: 20px; justify-content: center; align-items: center; }
+  .three-col { display: flex; gap: 10px; justify-content: center; align-items: center; }
+  .highlight-box { background: rgba(126, 200, 227, 0.15); border-left: 4px solid #7ec8e3; padding: 12px 18px; margin: 15px 0; font-size: 0.8em; text-align: left; border-radius: 4px; }
+  .reveal table { font-size: 0.65em; margin: 0 auto; border-collapse: collapse; }
+  .reveal table th, .reveal table td { border: 1px solid #555; padding: 8px 14px; }
+  .reveal table th { background: rgba(126, 200, 227, 0.25); }
+  .reveal table tr:nth-child(even) { background: rgba(255,255,255,0.05); }
+  .metric-good { color: #6ecf6e; font-weight: bold; }
+  .metric-bad { color: #e87474; font-weight: bold; }
+  .reveal .slide-number { font-size: 14px; }
+  .caption { font-size: 0.55em; color: #999; margin-top: 5px; }
+  .reveal p { font-size: 0.75em; }
+  .approach-label { font-size: 0.6em; background: #7ec8e3; color: #1a1a2e; padding: 3px 10px; border-radius: 12px; display: inline-block; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- Slide 1: Title -->
+<section>
+  <h2>DECODE-RAPL</h2>
+  <h3>Predicting CPU Power from OS-Level Metrics</h3>
+  <p style="margin-top: 30px; font-size: 0.7em; color: #aaa;">
+    <strong>DE</strong>layed <strong>E</strong>mbedding <strong>CO</strong>nvolutional network for <strong>DE</strong>coding <strong>RAPL</strong>
+  </p>
+  <p style="font-size: 0.6em; color: #888; margin-top: 40px;">A Deep Learning Journey Through Multiple Architectures</p>
+</section>
+
+<!-- Slide 2: Problem & Challenge -->
+<section>
+  <h2>Problem &amp; Challenge</h2>
+  <ul>
+    <li><strong>RAPL</strong> (Running Average Power Limit) &mdash; Intel's hardware power meter &mdash; is <span class="metric-bad">unavailable in VMs</span></li>
+    <li><strong>Goal:</strong> Predict CPU package power (Watts) using only VM-visible OS metrics from <code>/proc</code></li>
+    <li><strong>Same CPU% &ne; Same Power:</strong> 50% CPU on AVX-512 matrix multiply (~45W) vs. scalar sorting (~30W)</li>
+    <li>OS metrics miss <strong>microarchitectural details</strong>: instruction mix, cache behavior, pipeline utilization</li>
+    <li>Power has <strong>temporal dynamics</strong>: thermal inertia, frequency scaling, ramp-up/cool-down</li>
+  </ul>
+  <div class="highlight-box">
+    Core question: Can we reconstruct enough hidden CPU state from OS-level observables to predict power accurately?
+  </div>
+</section>
+
+<!-- Slide 3: MS-TCN -->
+<section>
+  <span class="approach-label">Approach 1</span>
+  <h2>MS-TCN: Multi-Scale Temporal CNN</h2>
+  <div class="side-by-side">
+    <div style="flex: 1;">
+      <img class="slide-img" style="max-height: 350px;" src="archive/ms-tcn/docs/model_architecture.png" alt="MS-TCN Architecture">
+    </div>
+    <div style="flex: 1; text-align: left;">
+      <ul>
+        <li>19 system metrics at 62.5 Hz, 740K params</li>
+        <li><strong>Multi-scale convolutions</strong> (kernel 3/5/7)</li>
+        <li><strong>6 dilated temporal blocks</strong> (dilation 1&rarr;32)</li>
+        <li><strong>Multi-head attention</strong> (8 heads)</li>
+        <li>Validation: <span class="metric-good">R&sup2; = 0.96, MAE = 3.50W</span></li>
+        <li>Real workloads: <span class="metric-bad">Failed</span> &mdash; data 98% skewed to &lt;30W</li>
+      </ul>
+      <div class="highlight-box" style="font-size: 0.7em;">
+        <strong>Lesson:</strong> The problem isn't model complexity &mdash; it's the information content of the features.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 4: Delay Embedding + v1 Architecture -->
+<section>
+  <span class="approach-label">Approach 2</span>
+  <h2>v1: Delay Embedding + AE + LSTM</h2>
+  <div class="side-by-side">
+    <div style="flex: 1; text-align: left;">
+      <h3>Key Idea: Takens' Theorem</h3>
+      <ul>
+        <li>Treat CPU power as a <strong>dynamical system</strong> with hidden state</li>
+        <li>Time-delayed copies reconstruct full state space</li>
+        <li><code>h(t) = [y(t), y(t-&tau;), ..., y(t-24&tau;)]</code></li>
+        <li>4 features &times; 25 delays = <strong>100-D</strong> input</li>
+        <li>Features: <code>user%</code>, <code>system%</code>, <code>iowait%</code>, <code>log(ctx/sec)</code></li>
+      </ul>
+      <img style="max-height: 140px; border: 1px solid #444; border-radius: 6px; margin-top: 8px;" src="docs/images/delay_embedding.png" alt="Delay Embedding">
+    </div>
+    <div style="flex: 1;">
+      <img class="slide-img" style="max-height: 380px;" src="docs/images/AutoEncoder+LSTM+PowerHead.drawio.png" alt="v1 Architecture">
+      <p style="font-size: 0.55em; color: #aaa;">Loss = &alpha; &middot; L<sub>power</sub> + &beta; &middot; L<sub>reconstruction</sub></p>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 5: v1 Results -->
+<section>
+  <span class="approach-label">Approach 2</span>
+  <h2>v1: Results &mdash; Great Offline, Bad Live</h2>
+  <div class="side-by-side">
+    <div>
+      <img class="slide-img-sm" src="docs/images/tau8_prediction_comparison.png" alt="v1 stress-ng results">
+      <p class="caption">stress-ng test: <span class="metric-good">R&sup2; = 0.97</span></p>
+    </div>
+    <div>
+      <img class="slide-img-sm" src="docs/images/tau8_real_workload_prediction_comparison.png" alt="v1 real workload results">
+      <p class="caption">Real workloads: <span class="metric-bad">R&sup2; = 0.29&ndash;0.40</span>, +10W bias</p>
+    </div>
+  </div>
+  <div class="highlight-box" style="margin-top: 10px;">
+    <strong>Diagnosis:</strong> Model memorized stress-ng patterns. Training data lacked diversity. LSTM may be redundant given delay embedding already encodes temporal info.
+  </div>
+</section>
+
+<!-- Slide 6: Better Data -->
+<section>
+  <h2>Better Data: The "Gold Mine" Dataset</h2>
+  <div class="side-by-side">
+    <div style="flex: 1; text-align: left;">
+      <ul>
+        <li><strong>Combinatorial workload generator:</strong> 6 stressors &times; multiple levels = <strong>2,025 unique combos</strong></li>
+        <li><strong>Go-based collector:</strong> 16ms interval, minimal overhead</li>
+        <li><strong>5.8M samples</strong>, power range 24W&ndash;102W</li>
+        <li>Includes true idle + real /proc reader workloads</li>
+        <li><strong>Multi-tau</strong> delay embedding (&tau; = 1, 4, 8)</li>
+        <li>MinMaxScaler on train split; global shuffle</li>
+      </ul>
+    </div>
+    <div style="flex: 1;">
+      <img class="slide-img-sm" style="max-height: 180px;" src="docs/images/run_1_of_2025-cpu0-sys0-io0-pipe0-vm0-cache0_plot.png" alt="Idle run">
+      <p class="caption">Pure idle (all stressors = 0)</p>
+      <img class="slide-img-sm" style="max-height: 180px;" src="docs/images/run_1551_of_2025-cpu20-sys40-io0-pipe20-vm0-cache20_plot.png" alt="Mixed workload">
+      <p class="caption">Mixed: cpu=20, sys=40, pipe=20, cache=20</p>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 7: v2 & v3 -->
+<section>
+  <h2>v2 &amp; v3: Simplifying the Architecture</h2>
+  <div class="side-by-side">
+    <div style="flex: 1; text-align: center;">
+      <span class="approach-label">v2: AE + Power Head</span>
+      <img class="slide-img" style="max-height: 250px;" src="docs/images/AutoEncoder+PowerHead.drawio.png" alt="v2 Architecture">
+      <ul style="font-size: 0.65em; text-align: left;">
+        <li>Removed LSTM &mdash; delay embedding has temporal info</li>
+        <li>268K params</li>
+        <li><span class="metric-bad">Overfit at epoch 2</span> without normalization</li>
+        <li>Reconstruction loss competes with prediction</li>
+      </ul>
+    </div>
+    <div style="flex: 1; text-align: center;">
+      <span class="approach-label">v3: Encoder + Power Head</span>
+      <img class="slide-img" style="max-height: 250px;" src="docs/images/Encoder+PowerHead.drawio.png" alt="v3 Architecture">
+      <ul style="font-size: 0.65em; text-align: left;">
+        <li>Removed decoder entirely &mdash; pure predictor</li>
+        <li>Added MinMaxScaler normalization</li>
+        <li>Offline: <span class="metric-good">R&sup2; = 0.96, MAE = 2.16W</span></li>
+        <li>Live: <span class="metric-bad">Still fails on idle &amp; real workloads</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 8: v3 Results -->
+<section>
+  <span class="approach-label">Approach 4</span>
+  <h2>v3: Best Offline, Still Fails Live</h2>
+  <div class="side-by-side">
+    <div>
+      <img class="slide-img-sm" src="docs/images/v3_with_norm_test_prediction.png" alt="v3 Test Predictions">
+      <p class="caption">Offline: <span class="metric-good">R&sup2; = 0.96, MAE = 2.16W</span></p>
+    </div>
+    <div>
+      <img class="slide-img-sm" src="docs/images/v3_with_norm_with_real_data_prediction.png" alt="v3 Live Predictions">
+      <p class="caption">Live: <span class="metric-bad">Significant errors on real data</span></p>
+    </div>
+  </div>
+  <div class="highlight-box" style="margin-top: 10px;">
+    <strong>The offline/online gap persists.</strong> Near-perfect on shuffled test set, but fails on sequential live data.
+  </div>
+</section>
+
+<!-- Slide 9: v4 Architecture + Results -->
+<section>
+  <span class="approach-label">Approach 5</span>
+  <h2>v4: 1D-CNN Encoder + Power Head</h2>
+  <div class="side-by-side">
+    <div style="flex: 1;">
+      <img class="slide-img" style="max-height: 300px;" src="docs/images/1D-Conv+PowerHead.drawio.png" alt="v4 Architecture">
+    </div>
+    <div style="flex: 1; text-align: left;">
+      <ul>
+        <li>Replaced MLP with <strong>1D Conv layers</strong></li>
+        <li>Input: <code>(batch, 4, 25)</code> &mdash; per-feature temporal processing</li>
+        <li>Kernels (5 steps &asymp; 80ms) learn temporal motifs</li>
+        <li>Switched to <strong>MAE loss</strong> (L1)</li>
+        <li>Tested across &tau; = 1, 4, 8</li>
+        <li>Offline: <span class="metric-good">R&sup2; &asymp; 0.95</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 10: v4 Live Results -->
+<section>
+  <span class="approach-label">Approach 5</span>
+  <h2>v4: Live Predictions Across &tau; Values</h2>
+  <div class="three-col">
+    <div>
+      <img class="slide-img-sm" style="max-height: 220px;" src="docs/images/v4_tau1_2layer_conv_with_real_data.png" alt="v4 tau=1">
+      <p class="caption">&tau; = 1</p>
+    </div>
+    <div>
+      <img class="slide-img-sm" style="max-height: 220px;" src="docs/images/v4_tau4_2layer_conv_with_real_data.png" alt="v4 tau=4">
+      <p class="caption">&tau; = 4</p>
+    </div>
+    <div>
+      <img class="slide-img-sm" style="max-height: 220px;" src="docs/images/v4_tau8_2layer_conv_with_real_data.png" alt="v4 tau=8">
+      <p class="caption">&tau; = 8</p>
+    </div>
+  </div>
+  <ul style="margin-top: 10px;">
+    <li>Idle baseline improved by ~3W (MAE loss helped)</li>
+    <li>Spike overreaction persists across all &tau; values</li>
+  </ul>
+</section>
+
+<!-- Slide 11: Summary Table -->
+<section>
+  <h2>Summary: The Consistent Pattern</h2>
+  <table>
+    <thead>
+      <tr><th>Approach</th><th>Architecture</th><th>Offline R&sup2;</th><th>Live Performance</th><th>Key Change</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>MS-TCN</td><td>Multi-scale CNN + Attention</td>
+        <td class="metric-good">0.96</td><td class="metric-bad">Failed on real workloads</td>
+        <td>19 raw features</td>
+      </tr>
+      <tr>
+        <td>v1</td><td>AE + LSTM + Power Head</td>
+        <td class="metric-good">0.97</td><td class="metric-bad">R&sup2; = 0.29&ndash;0.40</td>
+        <td>Delay embedding, 4 features</td>
+      </tr>
+      <tr>
+        <td>v2</td><td>AE + Power Head</td>
+        <td>&mdash;</td><td class="metric-bad">Overfitting</td>
+        <td>Removed LSTM</td>
+      </tr>
+      <tr>
+        <td>v3</td><td>Encoder + Power Head</td>
+        <td class="metric-good">0.96</td><td class="metric-bad">Failed on live</td>
+        <td>Removed decoder, added norm</td>
+      </tr>
+      <tr>
+        <td>v4</td><td>1D-CNN + Power Head</td>
+        <td class="metric-good">0.95</td><td class="metric-bad">Slightly better (+3W idle)</td>
+        <td>Conv layers, MAE loss</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="highlight-box" style="margin-top: 15px;">
+    <strong>Root Cause:</strong> OS-level features fundamentally cannot capture microarchitectural details (instruction mix, cache behavior, pipeline utilization). <strong>The features, not the models, are the bottleneck.</strong>
+  </div>
+</section>
+
+<!-- Slide 12: Future Directions -->
+<section>
+  <h2>Future Directions</h2>
+  <ul>
+    <li><strong>Alternative VM-visible metrics:</strong> guest CPU frequency, page fault rates, I/O throughput, eBPF tracing</li>
+    <li><strong>Post-processing calibration:</strong> per-workload-class correction factors (e.g., subtract +3W idle offset)</li>
+    <li><strong>Adversarial/domain-adaptation training:</strong> close the offline&ndash;online gap with domain-invariant latent representations</li>
+    <li><strong>Multi-machine generalization:</strong> train across same-architecture machines for architecture-level power models</li>
+    <li><strong>Hybrid approach:</strong> physics-informed constraints on power bounds + learned representations</li>
+  </ul>
+  <div class="highlight-box" style="margin-top: 20px;">
+    <strong>The model works. The features don't.</strong><br>
+    The deep learning pipeline is validated. Progress requires richer input signals that expose more of the CPU's hidden microarchitectural state.
+  </div>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.js"></script>
+<script>
+Reveal.initialize({
+  hash: true,
+  slideNumber: true,
+  transition: 'slide',
+  width: 1200,
+  height: 700
+});
+</script>
+</body>
+</html>

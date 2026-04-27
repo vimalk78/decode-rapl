@@ -1,0 +1,85 @@
+# DECODE-RAPL v4 Configuration - TAU=1
+# 1D-CNN Architecture: CNN Encoder → Power Head
+# Uses convolution to extract temporal patterns from delay-embedded features
+
+# Model version
+version: "v4"
+
+# Data paths
+data:
+  processed_dir: "data/processed/tau1"
+  train_file: "train.npz"
+  val_file: "val.npz"
+  test_file: "test.npz"
+
+# Output directories
+output:
+  checkpoint_dir: "checkpoints/v4_tau1"
+  results_dir: "results/v4_tau1"
+  plots_dir: "results/v4_tau1/plots"
+
+# Model architecture
+model:
+  version: "v4"              # Use v4.1 architecture (1D-CNN encoder with BatchNorm)
+  input_dim: 100             # 4 features × 25 delays
+  num_features: 4            # user%, system%, iowait%, log(ctx_switches)
+  sequence_length: 25        # Delay embedding dimension
+
+  # CNN parameters (v4.1: BatchNorm + wider kernel)
+  cnn_channels:              # Conv layers: 4 → 32 → 64
+    - 32
+    - 64
+  cnn_kernel_size: 5         # Kernel size for convolutions (wider temporal patterns)
+  pool_size: 2               # MaxPool kernel (25 → 12 timesteps)
+  use_batch_norm: true       # BatchNorm after Conv layers (v4.1)
+
+  # MLP after CNN
+  latent_dim: 64             # Latent bottleneck (after CNN+MLP)
+  power_head_layers:         # Power head: 64 → 128 → 64 → 1
+    - 128
+    - 64
+  dropout: 0.3               # Regularization (applied to MLP only, not CNN)
+
+# Training
+training:
+  batch_size: 256
+  epochs: 100
+  learning_rate: 0.0005      # Conservative starting LR
+  weight_decay: 0.0003       # L2 regularization
+  early_stopping_patience: 15
+
+  # Device
+  device: "cuda"             # "cuda" or "cpu"
+
+  # Learning rate scheduler
+  scheduler:
+    type: "ReduceLROnPlateau"
+    factor: 0.5
+    patience: 5
+    min_lr: 0.00001
+
+# Validation
+validation:
+  val_interval: 1            # Validate every N epochs
+  save_best: true            # Save best model based on val power loss
+
+# Logging
+logging:
+  log_interval: 100          # Log every N batches
+  plot_interval: 5           # Generate plots every N epochs
+
+# Random seed for reproducibility
+seed: 42
+
+# Delay embedding info (for reference, not used by model)
+embedding:
+  tau: 1                     # Time delay in samples
+  d: 25                      # Number of delays
+  n_features: 4              # user%, system%, iowait%, log(ctx_switches)
+  temporal_lookback_ms: 384  # (d-1) * tau * 16ms
+  cnn_receptive_field_ms: 80 # kernel_size=5 * 16ms (wider than v4's 48ms)
+  feature_order:
+    - "user_percent (0-24)"
+    - "system_percent (25-49)"
+    - "iowait_percent (50-74)"
+    - "log_ctx_switches (75-99)"

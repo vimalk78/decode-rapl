@@ -1,0 +1,94 @@
+Create a model inference script for CPU power prediction that shows both predicted and actual power values in the terminal.
+
+REQUIREMENTS:
+
+ - Load a trained MS-TCN model from .pth file
+ - Use the same 15 input features as training
+ - Support live system monitoring and CSV file replay
+ - Show clear comparison between predicted and actual power
+ - Provide real-time terminal output with color coding
+
+INPUT HANDLING:
+
+ - Load model weights and normalization parameters
+ - Verify model compatibility
+ - Set model to evaluation mode
+ - Handle version mismatches gracefully
+
+INFERENCE MODES:
+
+ - Live monitoring: real-time predictions from current system state
+ - CSV replay: inference on historical data with actual RAPL values
+ - Real-time streaming: continuous updates with clean display
+
+INPUT FEATURES:
+
+ - cpu_user_percent
+ - cpu_system_percent
+ - cpu_iowait_percent
+ - cpu_irq_percent
+ - memory_used_mb
+ - memory_cached_mb
+ - swap_used_mb
+ - page_faults_sec
+ - read_iops
+ - write_iops
+ - read_throughput_mb
+ - write_throughput_mb
+ - network_rx_mb_sec
+ - network_tx_mb_sec
+ - load_1min
+ - context_switches_sec
+
+TERMINAL OUTPUT:
+
+ - Show table with: Power Domain, Predicted Watts, Actual Watts, Error, Error%
+ - Color code accuracy: green for error under 5%, yellow for 5-10%, red over 10%
+ - Real-time updates for live monitoring
+ - Summary statistics with MAE and MAPE
+ - Historical accuracy trends for CSV mode
+
+DISPLAY FORMAT EXAMPLE:
+Power Domain | Predicted | Actual | Error | Error%
+Package | 45.2W | 46.1W | +0.9W | +2.0%
+Core | 28.7W | 29.2W | +0.5W | +1.7%
+DRAM | 12.1W | 11.8W | -0.3W | -2.5%
+
+PERFORMANCE METRICS:
+
+- Calculate Mean Absolute Error per domain
+- Calculate Mean Absolute Percentage Error
+- Track prediction accuracy over time
+- Show running averages and trends
+
+USAGE MODES:
+
+ - python power_predictor.py --model model.pth --live
+ - python power_predictor.py --model model.pth --csv test_data.csv
+ - python power_predictor.py --model model.pth --csv data.csv --benchmark
+
+LIVE MONITORING:
+
+ - Sample system metrics every 16ms
+ - Maintain 64-timestep sequence buffer
+ - Clear real-time terminal display
+ - Optional RAPL comparison on bare metal
+ - Export predictions to CSV
+
+ERROR HANDLING:
+
+ - Handle missing model file
+ - Check feature compatibility
+ - Handle missing system metrics
+ - Recover from data corruption
+ - Clear error messages
+
+ADDITIONAL FEATURES:
+
+ - Save predictions to CSV
+ - Generate prediction vs actual plots
+ - Measure inference speed
+ - Support different CPU architectures
+ - Performance benchmarking
+
+Create a Python script that provides clear terminal output showing both predicted power values and actual RAPL measurements with color-coded accuracy and performance metrics.

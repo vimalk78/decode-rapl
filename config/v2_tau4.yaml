@@ -1,0 +1,78 @@
+# DECODE-RAPL v2 Configuration - TAU=4
+# Simplified architecture with direct MLP power head
+
+# Data paths
+data:
+  processed_dir: "data/processed/tau4"  # tau=4 dataset
+  train_file: "train.npz"
+  val_file: "val.npz"
+  test_file: "test.npz"
+
+# Output directories
+output:
+  checkpoint_dir: "checkpoints/v2_tau4"
+  results_dir: "results/v2_tau4"
+  plots_dir: "results/v2_tau4/plots"
+
+# Model architecture
+model:
+  input_dim: 100          # 4 features × 25 delays
+  latent_dim: 64          # Wider latent space (v1 used 16)
+  encoder_layers:         # Encoder: 100 → 512 → 128 → 64
+    - 512
+    - 128
+  decoder_layers:         # Decoder: 64 → 128 → 512 → 100
+    - 128
+    - 512
+  power_head_layers:      # Power head (NEW): 64 → 128 → 64 → 1
+    - 128
+    - 64
+  dropout: 0.3            # INCREASED from 0.25 (more regularization)
+
+# Training
+training:
+  batch_size: 256
+  epochs: 100
+  learning_rate: 0.0005   # REDUCED from 0.001 (start more conservative)
+  weight_decay: 0.0003    # INCREASED from 0.0001 (more L2 regularization)
+  early_stopping_patience: 10  # REDUCED from 15 (stop earlier)
+
+  # Loss weights
+  loss_weights:
+    power: 1.0            # Main objective
+    reconstruction: 0.01  # REDUCED from 0.03 (minimize reconstruction influence)
+
+  # Learning rate scheduler
+  scheduler:
+    type: "ReduceLROnPlateau"  # or "StepLR", "CosineAnnealingLR"
+    factor: 0.5
+    patience: 5
+    min_lr: 0.00001
+
+  # Device
+  device: "cuda"          # "cuda" or "cpu"
+
+# Validation
+validation:
+  val_interval: 1         # Validate every N epochs
+  save_best: true         # Save best model based on val loss
+
+# Logging
+logging:
+  log_interval: 100       # Log every N batches
+  plot_interval: 5        # Generate plots every N epochs
+
+# Random seed for reproducibility
+seed: 42
+
+# Delay embedding info (for reference, not used by model)
+embedding:
+  tau: 4                  # Time delay in samples
+  d: 25                   # Number of delays
+  n_features: 4           # user%, system%, iowait%, log(ctx_switches)
+  temporal_lookback_ms: 1536  # (d-1) * tau * 16ms = 24 * 4 * 16 = 1536ms
+  feature_order:
+    - "user_percent (0-24)"
+    - "system_percent (25-49)"
+    - "iowait_percent (50-74)"
+    - "log_ctx_switches (75-99)"

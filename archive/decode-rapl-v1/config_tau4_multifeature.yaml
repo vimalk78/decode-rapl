@@ -1,0 +1,84 @@
+# DECODE-RAPL Configuration - τ=4 Multi-Feature
+# Delayed Embedding and Coherent Dynamics for Emulating RAPL
+#
+# Multi-feature input: user%, system%, context_switches
+# This solves the ambiguity problem where same CPU% can mean different power
+# depending on workload type (light syscalls vs heavy compute)
+#
+# τ=4 samples (64ms) provides good decorrelation with finer granularity
+
+# Data paths
+data:
+  train_csv: "data/training_multifeature.csv"
+  output_dir: "results/tau4_multifeature"
+  plots_dir: "results/tau4_multifeature/plots"
+  checkpoint_dir: "checkpoints/tau4_multifeature"
+
+# Delay embedding parameters
+embedding:
+  tau: 4  # Time delay in SAMPLES (4 samples = 64ms at 16ms sampling rate)
+  d: 25   # Number of delays (embedding dimension)
+  # With 3 features: input_dim = d * n_features = 25 * 3 = 75
+  # Total lookback: (d-1) * tau = 24 * 4 = 96 samples = 1536ms (1.54 seconds)
+  # With window_size=30: Total context = 30 * 64ms = 1920ms
+
+# Preprocessing
+preprocessing:
+  window_size: 30   # LSTM window size (30 * 64ms = 1920ms)
+  stride: 1         # Stride for sliding windows
+  train_split: 0.8
+  val_split: 0.1
+  test_split: 0.1
+  normalize_usage: true   # Normalize features to [0, 1]
+  normalize_power: true   # Use MinMaxScaler on power
+  sampling_rate_ms: 16    # Match actual data
+  feature_columns:        # Multi-feature input
+    - user_percent
+    - system_percent
+    - context_switches
+
+# Model architecture
+model:
+  latent_dim: 16       # Latent space dimension
+  encoder_layers:      # Encoder architecture (input 75 → 512 → 128 → 64 → 16)
+    - 512
+    - 128
+    - 64
+  lstm_hidden_size: 128  # LSTM capacity
+  lstm_num_layers: 1
+  dropout: 0.2
+  adversarial_hidden: 32  # Hidden size for discriminator
+
+# Training
+training:
+  batch_size: 32
+  epochs: 100
+  learning_rate: 0.002
+  weight_decay: 0.0001  # L2 regularization
+  early_stopping_patience: 10
+
+  # Loss weights
+  loss_weights:
+    reconstruction: 0.05
+    adversarial: 0.0      # Disabled
+    power_mse: 1.0        # Main objective
+
+  # Device
+  device: "cuda"  # "cuda" or "cpu"
+
+# Inference
+inference:
+  buffer_size: 216     # window_size*tau + (d-1)*tau = 30*4 + 24*4 = 216 samples
+                       # This is in terms of original 16ms samples
+  vm_mode: false
+  vm_vcpus: 4
+  host_cores: 16
+  sampling_rate_ms: 16  # Match training data
+
+# Logging
+logging:
+  level: "INFO"
+  log_file: "logs/decode_rapl_tau4_multifeature.log"
+
+# Random seed for reproducibility
+seed: 42
